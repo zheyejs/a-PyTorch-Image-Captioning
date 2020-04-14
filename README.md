@@ -8,7 +8,7 @@ If you're new to PyTorch, first read [Deep Learning with PyTorch: A 60 Minute Bl
 
 Questions, suggestions, or corrections can be posted as issues.
 
-I'm using `PyTorch 0.4` in `Python 3.6`.
+I'm using `torch 1.4.0`, `torchvision 0.5.0` in `Python 3.6`.
 
 ---
 
@@ -244,7 +244,7 @@ Therefore, **caption lengths fed to the model must be an `Int` tensor of dimensi
 
 See `create_input_files()` in [`utils.py`](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning/blob/master/utils.py).
 
-This reads the data downloaded and saves the following files –
+读取下载文件并保存为如下文件 –
 
 - An **HDF5 file containing images for each split in an `I, 3, 256, 256` tensor**, where `I` is the number of images in the split. Pixel values are still in the range [0, 255], and are stored as unsigned 8-bit `Int`s.
 - A **JSON file for each split with a list of `N_c` * `I` encoded captions**, where `N_c` is the number of captions sampled per image. These captions are in the same order as the images in the HDF5 file. Therefore, the `i`th caption will correspond to the `i // N_c`th image.

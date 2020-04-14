@@ -1,3 +1,15 @@
+# !/usr/bin/env python
+# -*- coding: utf8 -*-
+#
+#
+
+"""
+@author: jiangshuai
+@file:
+@time: 2020/4/13 19:05
+@desc:
+"""
+
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -7,10 +19,26 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import skimage.transform
 import argparse
-from scipy.misc import imread, imresize
+import imageio
+import requests
+from io import BytesIO
 from PIL import Image
+import baidu.agc.base.baidu_translate as baidu_translate
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def get_img(image_path):
+    """
+    获取图片值
+    :param img_path:
+    :return:
+    """
+    if 'http' in image_path:
+        img = np.array(Image.open(BytesIO(requests.get(image_path).content)))
+    else:
+        img = imageio.imread(image_path)
+    return img
 
 
 def caption_image_beam_search(encoder, decoder, image_path, word_map, beam_size=3):
@@ -29,11 +57,12 @@ def caption_image_beam_search(encoder, decoder, image_path, word_map, beam_size=
     vocab_size = len(word_map)
 
     # Read image and process
-    img = imread(image_path)
+    # img = imread(image_path)
+    img = get_img(image_path)
     if len(img.shape) == 2:
         img = img[:, :, np.newaxis]
         img = np.concatenate([img, img, img], axis=2)
-    img = imresize(img, (256, 256))
+    img = np.array(Image.fromarray(img).resize((256, 256)))
     img = img.transpose(2, 0, 1)
     img = img / 255.
     img = torch.FloatTensor(img).to(device)
@@ -159,8 +188,10 @@ def visualize_att(image_path, seq, alphas, rev_word_map, smooth=True):
     :param rev_word_map: reverse word mapping, i.e. ix2word
     :param smooth: smooth weights?
     """
-    image = Image.open(image_path)
-    image = image.resize([14 * 24, 14 * 24], Image.LANCZOS)
+    # image = Image.open(image_path)
+    image = get_img(image_path)
+    # image = image.resize([14 * 24, 14 * 24], Image.LANCZOS)
+    image = Image.fromarray(image).resize([14 * 24, 14 * 24], Image.LANCZOS)
 
     words = [rev_word_map[ind] for ind in seq]
 
@@ -213,6 +244,16 @@ if __name__ == '__main__':
     # Encode, decode with attention and beam search
     seq, alphas = caption_image_beam_search(encoder, decoder, args.img, word_map, args.beam_size)
     alphas = torch.FloatTensor(alphas)
+    # 打印image2text结果，翻译成英文
+    words_l = [rev_word_map[ind] for ind in seq]
+    # 'a large body of water with a mountain in the background'
+    # py_translator中的gtoken.py，urls.py 和client.py 的translate.google.com改为translate.google.cn
+    words = ' '.join(words_l[1: -1])
+    print(words)
+    # 英译汉
+    bdt = baidu_translate.BaiDuTranslate()
+    res = bdt.translate(words, 'en', 'zh')
+    print(res)
 
-    # Visualize caption and attention of best sequence
-    visualize_att(args.img, seq, alphas, rev_word_map, args.smooth)
+    # Visualize caption and attention of best sequence，暂时不需要
+    # visualize_att(args.img, seq, alphas, rev_word_map, args.smooth)
